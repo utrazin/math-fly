@@ -22,7 +22,6 @@ export function ProfileCard({ userStats }: ProfileCardProps) {
     navigate('/settings');
   };
 
-  // Show loading state while user data is being fetched
   if (!user) {
     return (
       <Card className="p-6">

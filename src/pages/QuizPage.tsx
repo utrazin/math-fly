@@ -28,13 +28,12 @@ export function QuizPage() {
   const hasNextLevel = currentLevelIndex < LEVEL_ORDER.length - 1;
   const nextLevel = hasNextLevel ? LEVEL_ORDER[currentLevelIndex + 1] : null;
   
-  // Tempos por nível
   const getTimePerQuestion = (level: DifficultLevel): number => {
     const times = {
-      facil: 30,    // 30 segundos
-      medio: 60,    // 1 minuto
-      dificil: 120, // 2 minutos
-      expert: 180   // 3 minutos
+      facil: 30,
+      medio: 60,
+      dificil: 120,
+      expert: 180
     };
     return times[level];
   };
@@ -48,12 +47,10 @@ export function QuizPage() {
   const [isAnswering, setIsAnswering] = useState(false);
   const [showNextButton, setShowNextButton] = useState(false);
   
-  // Verificar se o usuário tem acesso a esta fase
   const maxPhase = userStats?.maxPhase || 1;
   const currentPhaseNumber = currentLevelIndex + 1;
-  const hasAccess = userStats ? currentPhaseNumber <= maxPhase : true; // Permitir acesso enquanto carrega
+  const hasAccess = userStats ? currentPhaseNumber <= maxPhase : true;
 
-  // Reset quiz when level changes
   useEffect(() => {
     resetQuiz();
     setQuizState('intro');
@@ -63,19 +60,16 @@ export function QuizPage() {
     setShowNextButton(false);
   }, [level, resetQuiz]);
 
-  // Redirect if user doesn't have access to this phase
   useEffect(() => {
     if (userStats && !hasAccess) {
-      console.log(`🚫 Usuário não tem acesso à fase ${currentPhaseNumber}. Max phase: ${maxPhase}`);
       navigate('/');
     }
   }, [userStats, hasAccess, currentPhaseNumber, maxPhase, navigate]);
 
-  // Timer management
   useEffect(() => {
     if (quizState !== 'playing' || !session || isAnswering || showNextButton) return;
 
-    setTimeLeft(timePerQuestion); // Reset timer for new question
+    setTimeLeft(timePerQuestion);
 
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
@@ -92,7 +86,6 @@ export function QuizPage() {
 
   const handleStartQuiz = async () => {
     if (!hasAccess) {
-      console.log('🚫 Acesso negado à fase');
       navigate('/');
       return;
     }
@@ -108,23 +101,19 @@ export function QuizPage() {
 
   const handleTimeUp = () => {
     if (isAnswering || showNextButton) return;
-    handleAnswerClick(''); // Empty answer for timeout
+    handleAnswerClick('');
   };
 
   const handleAnswerClick = (answer: string) => {
     if (isAnswering || selectedAnswer || !session) return;
     
-    console.log('🎯 Resposta selecionada:', answer);
     
-    // Bloquear novos cliques e mostrar feedback
     setIsAnswering(true);
     setSelectedAnswer(answer);
     setShowNextButton(true);
     
-    // Submeter resposta e calcular resultado
-    const result = submitAnswer(answer);
+    submitAnswer(answer);
     
-    console.log('📊 Resultado:', result);
   };
 
   const handleNextQuestion = async () => {
@@ -133,8 +122,6 @@ export function QuizPage() {
     const isLastQuestion = session.currentQuestionIndex + 1 >= session.questions.length;
     
     if (isLastQuestion) {
-      // Quiz completo - ir para tela de resultados
-      console.log('🏁 Quiz completo, finalizando...');
       setQuizState('loading');
       const results = await finishQuiz();
       if (results) {
@@ -142,8 +129,6 @@ export function QuizPage() {
         setQuizState('results');
       }
     } else {
-      // Próxima pergunta - usar nextQuestion do hook e resetar estados
-      console.log('➡️ Próxima pergunta');
       nextQuestion();
       setSelectedAnswer(null);
       setIsAnswering(false);
@@ -162,12 +147,10 @@ export function QuizPage() {
 
   const handleNextLevel = () => {
     if (nextLevel) {
-      // Verificar se o próximo nível está desbloqueado
       const nextPhaseNumber = currentLevelIndex + 2;
       if (nextPhaseNumber <= maxPhase) {
       navigate(`/quiz/${nextLevel}`);
       } else {
-        // Se não estiver desbloqueado, voltar ao dashboard
         navigate('/');
       }
     }
@@ -177,7 +160,6 @@ export function QuizPage() {
     navigate('/');
   };
 
-  // Loading state
   if (quizState === 'loading' || loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
@@ -188,9 +170,7 @@ export function QuizPage() {
     );
   }
 
-  // Intro state
   if (quizState === 'intro') {
-    // Mostrar loading enquanto userStats não carregou
     if (!userStats) {
       return (
         <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
@@ -226,7 +206,6 @@ export function QuizPage() {
     );
   }
 
-  // Results state
   if (quizState === 'results' && quizResults) {
     return (
       <QuizResults
@@ -239,7 +218,6 @@ export function QuizPage() {
     );
   }
 
-  // Playing state
   if (quizState === 'playing' && session) {
     if (session.currentQuestionIndex >= session.questions.length) {
       return (
@@ -309,7 +287,6 @@ export function QuizPage() {
     );
   }
 
-  // Fallback
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
       <LoadingSpinner size="lg" text="Carregando..." />

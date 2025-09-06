@@ -68,13 +68,11 @@ export function QuizResults({
 
   const performance = getPerformanceMessage();
 
-  // Dados para o gráfico circular
   const chartData = [
     { name: 'Corretas', value: results.correctAnswers, color: '#10b981' },
     { name: 'Incorretas', value: results.totalQuestions - results.correctAnswers, color: '#ef4444' }
   ];
   
-  // Verificar se desbloqueou nova fase
   const unlockedNewPhase = results.correctAnswers >= 3;
   const currentPhaseNumber = ['facil', 'medio', 'dificil', 'expert'].indexOf(results.nivel) + 1;
   const maxPhase = userStats?.maxPhase || 1;

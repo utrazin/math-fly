@@ -25,7 +25,6 @@ interface PhaseSelectorProps {
 export function PhaseSelector({ onSelectPhase, userStats }: PhaseSelectorProps) {
   const { personalPerformance } = useStats();
 
-  // Helper function to extract colors from gradient classes
   const getGradientColors = (gradientClass: string) => {
     const colorMap: { [key: string]: string } = {
       'from-green-500 to-emerald-500': '#10b981, #059669',
@@ -36,21 +35,17 @@ export function PhaseSelector({ onSelectPhase, userStats }: PhaseSelectorProps) 
     return colorMap[gradientClass] || '#6b7280, #6b7280';
   };
 
-  // Get max phase from user stats (default to 1 if not available)
   const maxPhase = userStats?.maxPhase || 1;
   
-  // Calculate phase unlock status based on max_phase
   const getPhaseUnlockStatus = (difficulty: number) => {
     return difficulty <= maxPhase;
   };
 
-  // Check if phase is completed (user got 3+ correct answers)
   const isPhaseCompleted = (difficulty: number) => {
     const phaseResults = personalPerformance.filter(p => p.phase === difficulty);
     return phaseResults.some(result => result.correct_answers >= 3);
   };
 
-  // Get best score for phase
   const getBestScore = (difficulty: number) => {
     const phaseResults = personalPerformance.filter(p => p.phase === difficulty);
     if (phaseResults.length === 0) return undefined;

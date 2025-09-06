@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { Trophy, Target, TrendingUp } from 'lucide-react';
 import { PhaseSelector } from '../components/dashboard/PhaseSelector';
 import { StatsCard } from '../components/dashboard/StatsCard';
-import { RankingTable } from '../components/dashboard/RankingTable';
 import { ProfileCard } from '../components/dashboard/ProfileCard';
 import { DifficultLevel } from '../types/game';
 import { useStats } from '../hooks/useStats';
@@ -13,10 +12,8 @@ const logo = 'https://i.postimg.cc/YSJChsxt/math-Fly-logo.png';
 
 export function Dashboard() {
   const navigate = useNavigate();
-  const { userStats, globalRanking, loading } = useStats();
+  const { userStats, loading } = useStats();
   
-  // Debug logs
-  console.log('📊 UserStats no Dashboard:', userStats);
 
   const handleSelectPhase = (level: DifficultLevel) => {
     navigate(`/quiz/${level}`);

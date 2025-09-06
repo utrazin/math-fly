@@ -40,7 +40,6 @@ export function QuizQuestion({
       return 'bg-slate-700 hover:bg-slate-600 border-slate-600';
     }
 
-    // Show feedback after selection
     if (optionKey === correctAnswer) {
       return 'bg-green-500/30 border-green-500 text-green-300 shadow-green-500/20 shadow-lg';
     }

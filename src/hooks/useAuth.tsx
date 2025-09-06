@@ -19,19 +19,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log('Initial session:', session);
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
     });
 
-    // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth state changed:', event, session);
+    } = supabase.auth.onAuthStateChange(async (_, session) => {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
@@ -54,11 +50,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       if (error) {
-        console.error('Sign up error:', error);
         return { error };
       }
 
-      // Create user profile
       if (data.user) {
         const { error: profileError } = await supabase
           .from('users')
@@ -71,13 +65,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           ]);
 
         if (profileError) {
-          console.error('Profile creation error:', profileError);
         }
       }
 
       return { error: null };
     } catch (error) {
-      console.error('Sign up error:', error);
       return { error };
     } finally {
       setLoading(false);
@@ -93,13 +85,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       if (error) {
-        console.error('Sign in error:', error);
         return { error };
       }
 
       return { error: null };
     } catch (error) {
-      console.error('Sign in error:', error);
       return { error };
     } finally {
       setLoading(false);
@@ -111,10 +101,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(true);
       const { error } = await supabase.auth.signOut();
       if (error) {
-        console.error('Sign out error:', error);
       }
     } catch (error) {
-      console.error('Sign out error:', error);
     } finally {
       setLoading(false);
     }

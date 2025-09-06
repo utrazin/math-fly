@@ -35,7 +35,7 @@ interface FormErrors {
 
 export function SettingsPage() {
   const navigate = useNavigate();
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   
   const [formData, setFormData] = useState<FormData>({
     displayName: user?.user_metadata?.name || '',
@@ -53,7 +53,6 @@ export function SettingsPage() {
     confirm: false
   });
 
-  // Clear success message after 5 seconds
   useEffect(() => {
     if (success) {
       const timer = setTimeout(() => setSuccess(''), 5000);
@@ -68,12 +67,10 @@ export function SettingsPage() {
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
 
-    // Validate display name
     if (!formData.displayName.trim()) {
       newErrors.displayName = 'Nome não pode estar vazio';
     }
 
-    // If changing password, validate all password fields
     if (formData.newPassword || formData.confirmPassword || formData.currentPassword) {
       if (!formData.currentPassword) {
         newErrors.currentPassword = 'Senha atual é obrigatória';
@@ -82,7 +79,6 @@ export function SettingsPage() {
       if (!formData.newPassword) {
         newErrors.newPassword = 'Nova senha é obrigatória';
       } else {
-        // Password strength validation
         if (formData.newPassword.length < 8) {
           newErrors.newPassword = 'Nova senha deve ter pelo menos 8 caracteres';
         } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(formData.newPassword)) {
@@ -101,14 +97,12 @@ export function SettingsPage() {
 
   const updateDisplayName = async (name: string) => {
     try {
-      // Update user metadata
       const { error: authError } = await supabase.auth.updateUser({
         data: { name: name }
       });
 
       if (authError) throw authError;
 
-      // Update users table
       const { error: dbError } = await supabase
         .from('users')
         .update({ name: name })
@@ -118,14 +112,12 @@ export function SettingsPage() {
 
       return { success: true };
     } catch (error: any) {
-      console.error('Error updating display name:', error);
       return { success: false, error: error.message };
     }
   };
 
   const updatePassword = async (currentPassword: string, newPassword: string) => {
     try {
-      // Verify current password by attempting to sign in
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email: user?.email || '',
         password: currentPassword,
@@ -135,7 +127,6 @@ export function SettingsPage() {
         return { success: false, error: 'Senha atual incorreta' };
       }
 
-      // Update password
       const { error } = await supabase.auth.updateUser({ 
         password: newPassword 
       });
@@ -144,7 +135,6 @@ export function SettingsPage() {
 
       return { success: true };
     } catch (error: any) {
-      console.error('Error updating password:', error);
       return { success: false, error: 'Erro ao atualizar senha. Tente novamente.' };
     }
   };
@@ -162,7 +152,6 @@ export function SettingsPage() {
       let nameUpdated = false;
       let passwordUpdated = false;
 
-      // Update display name if changed
       if (formData.displayName !== (user?.user_metadata?.name || '')) {
         const result = await updateDisplayName(formData.displayName);
         if (!result.success) {
@@ -172,7 +161,6 @@ export function SettingsPage() {
         nameUpdated = true;
       }
 
-      // Update password if provided
       if (formData.newPassword) {
         const result = await updatePassword(formData.currentPassword, formData.newPassword);
         if (!result.success) {
@@ -181,7 +169,6 @@ export function SettingsPage() {
         }
         passwordUpdated = true;
         
-        // Clear password fields
         setFormData(prev => ({
           ...prev,
           currentPassword: '',
@@ -190,7 +177,6 @@ export function SettingsPage() {
         }));
       }
 
-      // Show success message
       if (nameUpdated && passwordUpdated) {
         setSuccess('Nome e senha atualizados com sucesso!');
       } else if (nameUpdated) {
@@ -200,7 +186,6 @@ export function SettingsPage() {
       }
 
     } catch (error: any) {
-      console.error('Error saving settings:', error);
       setErrors({ general: 'Erro inesperado. Tente novamente.' });
     } finally {
       setLoading(false);
@@ -209,7 +194,6 @@ export function SettingsPage() {
 
   const handleInputChange = (field: keyof FormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-    // Clear field error when user starts typing
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: undefined }));
     }

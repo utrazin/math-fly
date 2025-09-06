@@ -1,7 +1,6 @@
 import { supabase } from '../lib/supabase';
 import { Question, DifficultLevel } from '../types/game';
 
-// Mapeamento de níveis para números
 const LEVEL_TO_PHASE: Record<DifficultLevel, number> = {
   facil: 1,
   medio: 2,
@@ -9,74 +8,48 @@ const LEVEL_TO_PHASE: Record<DifficultLevel, number> = {
   expert: 4
 };
 
-const PHASE_TO_LEVEL: Record<number, DifficultLevel> = {
-  1: 'facil',
-  2: 'medio',
-  3: 'dificil',
-  4: 'expert'
-};
 
 export class QuizService {
   static async getQuestionsByPhase(nivel: DifficultLevel, limit: number = 5): Promise<Question[]> {
     try {
-      console.log(`🔍 Buscando questões embaralhadas para o nível: ${nivel} - ${new Date().toISOString()}`);
       
-      // Buscar todas as questões do nível com timestamp para evitar cache
       const { data, error } = await supabase
         .from('questions')
         .select('*')
         .eq('nivel', nivel)
-        .order('id', { ascending: true }); // Ordem consistente primeiro
+        .order('id', { ascending: true });
 
       if (error) {
-        console.error('❌ Erro ao buscar questões (tabela não existe?):', error);
-        console.log('🔄 Usando questões mock com randomização...');
+        console.error('Erro ao buscar questões (tabela não existe?):', error);
         return this.getMockQuestionsWithShuffle(nivel, limit);
       }
 
       if (!data || data.length === 0) {
-        console.warn('⚠️ Nenhuma questão encontrada para o nível:', nivel);
-        console.log('🔄 Usando questões mock com randomização...');
         return this.getMockQuestionsWithShuffle(nivel, limit);
       }
 
-      console.log(`📊 Total de questões encontradas: ${data.length} para nível ${nivel}`);
-      console.log(`🎲 Primeiras 3 questões antes do shuffle:`, data.slice(0, 3).map(q => q.id_pergunta));
 
-      // Embaralhar as questões usando Fisher-Yates shuffle
       const shuffledQuestions = this.shuffleArray([...data]);
       
-      console.log(`🎲 Primeiras 3 questões após shuffle:`, shuffledQuestions.slice(0, 3).map(q => q.id_pergunta));
       
-      // Pegar apenas o número limitado de questões
       const selectedQuestions = shuffledQuestions.slice(0, limit);
       
-      // Verificar se realmente mudou
-      const isDifferent = selectedQuestions.some((q, index) => 
-        data[index] && q.id_pergunta !== data[index].id_pergunta
-      );
-      console.log(`🔍 As questões são diferentes das primeiras? ${isDifferent}`);
 
-      console.log(`✅ ${selectedQuestions.length} questões selecionadas:`, selectedQuestions.map(q => q.id_pergunta));
       return selectedQuestions;
     } catch (error) {
-      console.error('❌ Erro no serviço de questões:', error);
-      console.log('🔄 Usando questões mock com randomização...');
+      console.error('Erro no serviço de questões:', error);
       return this.getMockQuestionsWithShuffle(nivel, limit);
     }
   }
 
-  // Função para embaralhar array (Fisher-Yates shuffle)
   private static shuffleArray<T>(array: T[]): T[] {
     const shuffled = [...array];
-    console.log(`🔄 Embaralhando array com ${shuffled.length} elementos`);
     
     for (let i = shuffled.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
     }
     
-    console.log(`🎲 Embaralhamento concluído`);
     return shuffled;
   }
 
@@ -92,11 +65,9 @@ export class QuizService {
     }
   ) {
     try {
-      console.log('💾 Salvando resultado do quiz:', results);
       
       const phase = LEVEL_TO_PHASE[results.nivel];
       
-      // Salvar resultado da fase
       const { error: resultError } = await supabase
         .from('phase_results')
         .insert({
@@ -108,11 +79,10 @@ export class QuizService {
         });
 
       if (resultError) {
-        console.error('❌ Erro ao salvar resultado da fase:', resultError);
+        console.error('Erro ao salvar resultado da fase:', resultError);
         throw resultError;
       }
 
-      // Buscar progresso atual do usuário
       const { data: currentProgress, error: progressError } = await supabase
         .from('user_progress')
         .select('*')
@@ -120,20 +90,16 @@ export class QuizService {
         .single();
 
       if (progressError && progressError.code !== 'PGRST116') {
-        console.error('❌ Erro ao buscar progresso:', progressError);
+        console.error('Erro ao buscar progresso:', progressError);
         throw progressError;
       }
 
-      // Calcular novo max_phase
       let newMaxPhase = currentProgress?.max_phase || 1;
       
-      // Se o usuário acertou 3 ou mais questões, pode avançar para a próxima fase
       if (results.correctAnswers >= 3 && phase >= newMaxPhase) {
-        newMaxPhase = Math.min(phase + 1, 4); // Máximo é 4 (expert)
-        console.log(`🎉 Usuário desbloqueou nova fase! max_phase: ${currentProgress?.max_phase || 1} -> ${newMaxPhase}`);
+        newMaxPhase = Math.min(phase + 1, 4);
       }
 
-      // Atualizar ou criar progresso do usuário
       const progressData = {
         user_id: userId,
         max_phase: newMaxPhase,
@@ -147,11 +113,10 @@ export class QuizService {
         .upsert(progressData, { onConflict: 'user_id' });
 
       if (upsertError) {
-        console.error('❌ Erro ao atualizar progresso:', upsertError);
+        console.error('Erro ao atualizar progresso:', upsertError);
         throw upsertError;
       }
 
-      console.log('✅ Resultado salvo com sucesso');
       
       return {
         success: true,
@@ -159,7 +124,7 @@ export class QuizService {
         unlockedNewPhase: newMaxPhase > (currentProgress?.max_phase || 1)
       };
     } catch (error) {
-      console.error('❌ Erro ao salvar resultado:', error);
+      console.error('Erro ao salvar resultado:', error);
       throw error;
     }
   }
@@ -173,13 +138,13 @@ export class QuizService {
         .single();
 
       if (error && error.code !== 'PGRST116') {
-        console.error('❌ Erro ao buscar max_phase:', error);
-        return 1; // Padrão
+        console.error('Erro ao buscar max_phase:', error);
+        return 1;
       }
 
       return data?.max_phase || 1;
     } catch (error) {
-      console.error('❌ Erro ao buscar max_phase:', error);
+      console.error('Erro ao buscar max_phase:', error);
       return 1;
     }
   }
@@ -194,34 +159,24 @@ export class QuizService {
         synced: false
       });
       localStorage.setItem('mathfly_offline_progress', JSON.stringify(progress));
-      console.log('💾 Progresso salvo offline');
     } catch (error) {
-      console.error('❌ Erro ao salvar offline:', error);
+      console.error('Erro ao salvar offline:', error);
     }
   }
 
-  // Função para obter questões mock com randomização
   private static getMockQuestionsWithShuffle(nivel: DifficultLevel, limit: number): Question[] {
-    console.log(`🎲 Obtendo questões mock embaralhadas para nível: ${nivel}`);
-    const allMockQuestions = this.getMockQuestions(nivel, 100); // Pegar todas as mock questions
+    const allMockQuestions = this.getMockQuestions(nivel, 100);
     
     if (allMockQuestions.length === 0) {
-      console.warn('⚠️ Nenhuma questão mock disponível');
       return [];
     }
     
-    console.log(`📊 Total de questões mock: ${allMockQuestions.length}`);
-    console.log(`🎲 Primeiras 3 questões mock antes do shuffle:`, allMockQuestions.slice(0, 3).map(q => q.id_pergunta));
     
-    // Embaralhar as questões mock
     const shuffledQuestions = this.shuffleArray([...allMockQuestions]);
     
-    console.log(`🎲 Primeiras 3 questões mock após shuffle:`, shuffledQuestions.slice(0, 3).map(q => q.id_pergunta));
     
-    // Pegar apenas o número limitado de questões
     const selectedQuestions = shuffledQuestions.slice(0, limit);
     
-    console.log(`✅ ${selectedQuestions.length} questões mock selecionadas:`, selectedQuestions.map(q => q.id_pergunta));
     return selectedQuestions;
   }
 

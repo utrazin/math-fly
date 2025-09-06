@@ -32,7 +32,6 @@ export function RegisterForm({ onSwitchToLogin }: RegisterFormProps) {
     setLoading(true);
     setError('');
 
-    // Validações
     if (password !== confirmPassword) {
       setError('As senhas não coincidem');
       setLoading(false);

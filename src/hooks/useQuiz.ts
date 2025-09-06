@@ -12,10 +12,10 @@ const POINTS_BY_LEVEL = {
 };
 
 const TIME_BY_LEVEL = {
-  facil: 30,    // 30 segundos
-  medio: 60,    // 1 minuto
-  dificil: 120, // 2 minutos
-  expert: 180   // 3 minutos
+  facil: 30,
+  medio: 60,
+  dificil: 120,
+  expert: 180
 };
 
 export function useQuiz() {
@@ -31,7 +31,6 @@ export function useQuiz() {
       return null;
     } 
     
-    console.log('🎮 Iniciando quiz para nível:', nivel);
     setLoading(true);
     setError(null);
     
@@ -52,10 +51,9 @@ export function useQuiz() {
       };
       
       setSession(newSession);
-      console.log('✅ Quiz iniciado com sucesso');
       return newSession;
     } catch (error) {
-      console.error('❌ Erro ao iniciar quiz:', error);
+      console.error('Erro ao iniciar quiz:', error);
       setError(error instanceof Error ? error.message : 'Erro desconhecido ao carregar questões');
       return null;
     } finally {
@@ -65,33 +63,28 @@ export function useQuiz() {
 
   const submitAnswer = useCallback((answer: string) => {
     if (!session) {
-      console.warn('⚠️ Tentativa de submeter resposta sem sessão ativa');
       return null;
     }
 
-    console.log('📝 Submetendo resposta:', answer);
     
     const currentQuestion = session.questions[session.currentQuestionIndex];
     const isCorrect = answer === currentQuestion.resposta_correta;
     
-    // Calculate time bonus (dynamic based on level)
     const currentTime = Date.now();
-    const timePerQuestion = TIME_BY_LEVEL[session.nivel] * 1000; // Convert to milliseconds
+    const timePerQuestion = TIME_BY_LEVEL[session.nivel] * 1000;
     const questionStartTime = session.startTime + (session.answers.length * timePerQuestion);
     const timeSpent = Math.max(0, (currentTime - questionStartTime) / 1000);
     const maxTime = TIME_BY_LEVEL[session.nivel];
-    const timeBonus = Math.max(0, Math.floor((maxTime - timeSpent) / 5)); // Bonus decreases every 5 seconds
+    const timeBonus = Math.max(0, Math.floor((maxTime - timeSpent) / 5));
     
     const basePoints = POINTS_BY_LEVEL[session.nivel];
     const questionPoints = isCorrect ? basePoints + timeBonus : 0;
 
-    console.log('🎯 Resultado:', { isCorrect, questionPoints, timeBonus });
 
     const updatedSession = {
       ...session,
       answers: [...session.answers, answer],
       score: session.score + questionPoints
-      // NÃO incrementar currentQuestionIndex aqui - será feito depois do feedback
     };
 
     setSession(updatedSession);
@@ -106,11 +99,9 @@ export function useQuiz() {
 
   const nextQuestion = useCallback(() => {
     if (!session) {
-      console.warn('⚠️ Tentativa de avançar pergunta sem sessão ativa');
       return null;
     }
 
-    console.log('➡️ Avançando para próxima pergunta');
     
     const updatedSession = {
       ...session,
@@ -123,11 +114,9 @@ export function useQuiz() {
 
   const finishQuiz = useCallback(async () => {
     if (!session || !user) {
-      console.warn('⚠️ Tentativa de finalizar quiz sem sessão ou usuário');
       return null;
     }
 
-    console.log('🏁 Finalizando quiz...');
     
     const endTime = Date.now();
     const totalTime = Math.floor((endTime - session.startTime) / 1000);
@@ -145,28 +134,21 @@ export function useQuiz() {
     };
 
     try {
-      // Salvar resultado no Supabase
-      const saveResult = await QuizService.saveQuizResult(user.id, results);
-      console.log('✅ Quiz finalizado e salvo com sucesso');
+      await QuizService.saveQuizResult(user.id, results);
       
-      // Atualizar estatísticas para refletir mudanças no max_phase
       await refreshStats();
       
-      // Retornar informações sobre desbloqueio de nova fase
       return results;
     } catch (error) {
-      console.error('❌ Erro ao salvar resultado:', error);
+      console.error('Erro ao salvar resultado:', error);
       
-      // Salvar offline se falhar
       QuizService.saveOfflineProgress(results);
       
-      // Ainda retornar os resultados para mostrar ao usuário
       return results;
     }
 }, [session, user, refreshStats]);
 
   const resetQuiz = useCallback(() => {
-    console.log('🔄 Resetando quiz');
     setSession(null);
     setError(null);
     setLoading(false);

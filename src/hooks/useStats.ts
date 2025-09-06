@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from './useAuth';
+import { DifficultLevel } from '../types/game';
 
 interface UserStats {
   totalScore: number;
   totalGames: number;
   averageAccuracy: number;
-  bestPhase: string;
+  bestPhase: DifficultLevel;
   lastPlayed: string;
   maxPhase: number;
 }
@@ -35,12 +36,11 @@ export function useStats() {
 
   const loadUserStats = async () => {
     if (!user) {
-      console.log('⚠️ Usuário não autenticado, definindo stats padrão');
       setUserStats({
         totalScore: 0,
         totalGames: 0,
         averageAccuracy: 0,
-        bestPhase: 'facil',
+        bestPhase: 'facil' as DifficultLevel,
         lastPlayed: new Date().toISOString(),
         maxPhase: 1
       });
@@ -48,7 +48,6 @@ export function useStats() {
     }
 
     try {
-      console.log('📊 Carregando estatísticas do usuário:', user.id);
       
       const { data: progress } = await supabase
         .from('user_progress')
@@ -71,21 +70,19 @@ export function useStats() {
         totalScore,
         totalGames,
         averageAccuracy,
-        bestPhase: 'facil',
+        bestPhase: 'facil' as DifficultLevel,
         lastPlayed: results?.[0]?.completed_at || new Date().toISOString(),
         maxPhase
       };
 
-      console.log('✅ Estatísticas carregadas:', stats);
       setUserStats(stats);
     } catch (error) {
-      console.error('❌ Erro ao carregar estatísticas:', error);
-      // Set default stats if error
+      console.error('Erro ao carregar estatísticas:', error);
       setUserStats({
         totalScore: 0,
         totalGames: 0,
         averageAccuracy: 0,
-        bestPhase: 'facil',
+        bestPhase: 'facil' as DifficultLevel,
         lastPlayed: new Date().toISOString(),
         maxPhase: 1
       });
@@ -94,9 +91,7 @@ export function useStats() {
 
   const loadGlobalRanking = async () => {
     try {
-      console.log('🏆 Carregando ranking global...');
       
-      // CORRIGIDO: Buscar ranking baseado no total de pontos acumulados
       const { data } = await supabase
         .from('user_progress')
         .select(`
@@ -113,14 +108,12 @@ export function useStats() {
           pontuacao: entry.total_points,
           data_partida: entry.updated_at
         }));
-        console.log('✅ Ranking carregado:', rankings.length, 'entradas');
         setGlobalRanking(rankings);
       } else {
-        console.log('📊 Nenhum dado de ranking encontrado');
         setGlobalRanking([]);
       }
     } catch (error) {
-      console.error('❌ Erro ao carregar ranking:', error);
+      console.error('Erro ao carregar ranking:', error);
       setGlobalRanking([]);
     }
   };
@@ -129,7 +122,6 @@ export function useStats() {
     if (!user) return;
 
     try {
-      console.log('📈 Carregando performance pessoal...');
       
       const { data } = await supabase
         .from('phase_results')
@@ -143,17 +135,15 @@ export function useStats() {
           ...p,
           accuracy: (p.correct_answers / 5) * 100
         }));
-        console.log('✅ Performance carregada:', performances.length, 'registros');
         setPersonalPerformance(performances);
       }
     } catch (error) {
-      console.error('❌ Erro ao carregar performance:', error);
+      console.error('Erro ao carregar performance:', error);
       setPersonalPerformance([]);
     }
   };
 
   const refreshStats = async () => {
-    console.log('🔄 Atualizando todas as estatísticas...');
     setLoading(true);
     
     try {
@@ -162,9 +152,8 @@ export function useStats() {
         loadGlobalRanking(),
         loadPersonalPerformance()
       ]);
-      console.log('✅ Todas as estatísticas atualizadas');
     } catch (error) {
-      console.error('❌ Erro ao atualizar estatísticas:', error);
+      console.error('Erro ao atualizar estatísticas:', error);
     } finally {
       setLoading(false);
     }
@@ -172,10 +161,8 @@ export function useStats() {
 
   useEffect(() => {
     if (user) {
-      console.log('👤 Usuário detectado, carregando estatísticas...');
       refreshStats();
     } else {
-      console.log('🚫 Sem usuário, limpando estatísticas...');
       setUserStats(null);
       setGlobalRanking([]);
       setPersonalPerformance([]);
@@ -183,23 +170,19 @@ export function useStats() {
     }
   }, [user]);
 
-  // Real-time ranking updates
   useEffect(() => {
-    console.log('📡 Configurando atualizações em tempo real...');
     
     const subscription = supabase
       .channel('ranking_updates')
       .on('postgres_changes',
-        { event: '*', schema: 'public', table: 'user_progress' }, // Escutar todas as mudanças
-        (payload) => {
-          console.log('🔄 Progresso atualizado, atualizando ranking...', payload);
+        { event: '*', schema: 'public', table: 'user_progress' },
+        () => {
           loadGlobalRanking();
         }
       )
       .subscribe();
 
     return () => {
-      console.log('🔌 Desconectando atualizações em tempo real');
       supabase.removeChannel(subscription);
     };
   }, []);
